@@ -16,23 +16,21 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-# Blender Add-Ons menu registration (in User Prefs)
-"Measure Panel (View3D > Properties > Measure)"
-
 import bpy
 from bpy.props import *
 
 # Precicion for display of float values.
 PRECISION = 5
 
-"""
-Name: 'Measure panel'
-Blender: 250
-"""
-__author__ = ["Buerbaum Martin (Pontiac)"]
-__url__ = ["http://gitorious.org/blender-scripts/blender-measure-panel-script",
-    "http://blenderartists.org/forum/showthread.php?t=177800"]
-__version__ = '0.6.3'
+bl_addon_info = {
+    'name': 'Measure panel',
+    'author': 'Buerbaum Martin (Pontiac)',
+    'version': '0.6.3',
+    'blender': '2.5.3',
+    'location': 'View3D > Properties > Measure',
+    'url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/Scripts/Panel_Measure',
+    'category': 'UI'}
+
 __bpydoc__ = """
 Measure panel
 
@@ -128,6 +126,8 @@ See the other "todo" comments below.
 # @todo Support other object types (surfaces, etc...)?
 # @todo Is there a better way to handle
 #       global calculation? (transformed mesh)
+
+
 def objectSurfaceArea(obj, selectedOnly, globalSpace):
     if (obj and obj.type == 'MESH' and obj.data):
         areaTotal = 0
