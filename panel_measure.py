@@ -23,13 +23,13 @@ from bpy.props import *
 PRECISION = 5
 
 bl_addon_info = {
-    'name': 'Measure panel',
+    'name': '3D View: Measure panel',
     'author': 'Buerbaum Martin (Pontiac)',
     'version': '0.6.3',
     'blender': '2.5.3',
     'location': 'View3D > Properties > Measure',
     'url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/Scripts/Panel_Measure',
-    'category': 'UI'}
+    'category': '3D View'}
 
 __bpydoc__ = """
 Measure panel
