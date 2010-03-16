@@ -30,7 +30,7 @@ bl_addon_info = {
     'category': 'Add_Mesh'}
 
 """
-Name: 'Add_Mesh_Diamond'
+Name: 'Add_Mesh_Star'
 Blender: 250
 """
 
