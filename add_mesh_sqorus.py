@@ -23,11 +23,12 @@
 bl_addon_info = {
     'name': 'Add Mesh: Sqorus',
     'author': 'fourmadmen',
-    'version': '1.1',
+    'version': '1.2',
     'blender': (2, 5, 3),
     'location': 'View3D > Add > Mesh ',
     'description': 'Adds a mesh Squorus to the Add Mesh menu',
-    'url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/Scripts/Add_Sqorus',
+    'url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/' \
+        'Scripts/Add_Sqorus',
     'category': 'Add Mesh'}
 
 # blender Extensions menu registration (in user Prefs)
@@ -53,125 +54,250 @@ Usage:
 
 
 import bpy
-import mathutils
+from mathutils import *
+from bpy.props import FloatProperty, BoolProperty
 
 
+# Stores the values of a list of properties and the
+# operator id in a property group ('recall_op') inside the object.
+# Could (in theory) be used for non-objects.
+# Note: Replaces any existing property group with the same name!
+# ob ... Object to store the properties in.
+# op ... The operator that should be used.
+# op_args ... A dictionary with valid Blender
+#             properties (operator arguments/parameters).
+def store_recall_properties(ob, op, op_args):
+    if ob and op and op_args:
+        recall_properties = {}
+
+        # Add the operator identifier and op parameters to the properties.
+        recall_properties['op'] = op.bl_idname
+        recall_properties['args'] = op_args
+
+        # Store new recall properties.
+        ob['recall'] = recall_properties
+
+
+# Apply view rotation to objects if "Align To" for
+# new objects was set to "VIEW" in the User Preference.
+def apply_object_align(context, ob):
+    obj_align = bpy.context.user_preferences.edit.object_align
+
+    if (context.space_data.type == 'VIEW_3D'
+        and obj_align == 'VIEW'):
+            view3d = context.space_data
+            region = view3d.region_3d
+            viewMatrix = region.view_matrix
+            rot = viewMatrix.rotation_part()
+            ob.rotation_euler = rot.invert().to_euler()
+
+
+# Create a new mesh (object) from verts/edges/faces.
+# verts/edges/faces ... List of vertices/edges/faces for the
+#                       new mesh (as used in from_pydata).
+# name ... Name of the new mesh (& object).
+# edit ... Replace existing mesh data.
+# Note: Using "edit" will destroy/delete existing mesh data.
+def create_mesh_object(context, verts, edges, faces, name, edit):
+    scene = context.scene
+    obj_act = scene.objects.active
+
+    # Can't edit anything, unless we have an active obj.
+    if edit and not obj_act:
+        return None
+
+    # Create new mesh
+    mesh = bpy.data.meshes.new(name)
+
+    # Make a mesh from a list of verts/edges/faces.
+    mesh.from_pydata(verts, edges, faces)
+
+    # Update mesh geometry after adding stuff.
+    mesh.update()
+
+    # Deselect all objects.
+    bpy.ops.object.select_all(action='DESELECT')
+
+    if edit:
+        # Replace geometry of existing object
+
+        # Use the active obj and select it.
+        ob_new = obj_act
+        ob_new.selected = True
+
+        if obj_act.mode == 'OBJECT':
+            # Get existing mesh datablock.
+            old_mesh = ob_new.data
+
+            # Set object data to nothing
+            ob_new.data = None
+
+            # Clear users of existing mesh datablock.
+            old_mesh.user_clear()
+
+            # Remove old mesh datablock if no users are left.
+            if (old_mesh.users == 0):
+                bpy.data.meshes.remove(old_mesh)
+
+            # Assign new mesh datablock.
+            ob_new.data = mesh
+
+    else:
+        # Create new object
+        ob_new = bpy.data.objects.new(name, mesh)
+
+        # Link new object to the given scene and select it.
+        scene.objects.link(ob_new)
+        ob_new.selected = True
+
+        # Place the object at the 3D cursor location.
+        ob_new.location = scene.cursor_location
+
+        apply_object_align(context, ob_new)
+
+    if obj_act and obj_act.mode == 'EDIT':
+        if not edit:
+            # We are in EditMode, switch to ObjectMode.
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+            # Select the active object as well.
+            obj_act.selected = True
+
+            # Apply location of new object.
+            scene.update()
+
+            # Join new object into the active.
+            bpy.ops.object.join()
+
+            # Switching back to EditMode.
+            bpy.ops.object.mode_set(mode='EDIT')
+
+            ob_new = obj_act
+
+    else:
+        # We are in ObjectMode.
+        # Make the new object the active one.
+        scene.objects.active = ob_new
+
+    return ob_new
+
+
+# @todo Simplify the face creation code (i.e. remove all that hardcoded
+# stuff if possible)
 def add_sqorus(sqorus_width, sqorus_height, sqorus_depth):
-
-    Vector = mathutils.Vector
     verts = []
     faces = []
-    half_depth = sqorus_depth * .5
+
+    half_depth = sqorus_depth / 2.0
 
     for i in range(4):
-        y = float(i) / 3 * sqorus_height
+        y = float(i) / 3.0 * sqorus_height
 
         for j in range(4):
-            x = float(j) / 3 * sqorus_width
+            x = float(j) / 3.0 * sqorus_width
 
-            verts.extend(Vector(x, y, half_depth))
-            verts.extend(Vector(x, y, -half_depth))
+            verts.append(Vector(x, y, half_depth))
+            verts.append(Vector(x, y, -half_depth))
 
     for i in (0, 2, 4, 8, 12, 16, 18, 20):
-        faces.extend([i, i + 2, i + 10, i + 8])
-        faces.extend([i + 1, i + 9, i + 11, i + 3])
+        faces.append([i, i + 2, i + 10, i + 8])
+        faces.append([i + 1, i + 9, i + 11, i + 3])
 
     for i in (0, 8, 16):
-        faces.extend([i, i + 8, i + 9, i + 1])
+        faces.append([i, i + 8, i + 9, i + 1])
 
     for i in (6, 14, 22):
-        faces.extend([i, i + 1, i + 9, i + 8])
+        faces.append([i, i + 1, i + 9, i + 8])
 
     for i in (0, 2, 4):
-        faces.extend([i, i + 1, i + 3, i + 2])
+        faces.append([i, i + 1, i + 3, i + 2])
 
     for i in (24, 26, 28):
-        faces.extend([i, i + 2, i + 3, i + 1])
+        faces.append([i, i + 2, i + 3, i + 1])
 
     i = 10
-    faces.extend([i, i + 1, i + 9, i + 8])
+    faces.append([i, i + 1, i + 9, i + 8])
 
     i = 12
-    faces.extend([i, i + 8, i + 9, i + 1])
+    faces.append([i, i + 8, i + 9, i + 1])
 
     i = 18
-    faces.extend([i, i + 1, i + 3, i + 2])
+    faces.append([i, i + 1, i + 3, i + 2])
 
     i = 10
-    faces.extend([i, i + 2, i + 3, i + 1])
+    faces.append([i, i + 2, i + 3, i + 1])
 
     return verts, faces
-
-from bpy.props import FloatProperty
 
 
 class AddSqorus(bpy.types.Operator):
     '''Add a sqorus mesh.'''
-    bl_idname = "mesh.sqorus_add"
+    bl_idname = "mesh.primitive_sqorus_add"
     bl_label = "Add Sqorus"
     bl_options = {'REGISTER', 'UNDO'}
 
-    sqorus_width = FloatProperty(name="Width",
+    # edit - Whether to add or update.
+    edit = BoolProperty(name="",
+        description="",
+        default=False,
+        options={'HIDDEN'})
+    width = FloatProperty(name="Width",
         description="Width of Sqorus",
-        default=2.00, min=0.01, max=100.00)
-    sqorus_height = FloatProperty(name="Height",
+        min=0.01,
+        max=9999.0,
+        default=2.0)
+    height = FloatProperty(name="Height",
         description="Height of Sqorus",
-        default=2.00, min=0.01, max=100.00)
-    sqorus_depth = FloatProperty(name="Depth",
+        min=0.01,
+        max=9999.0,
+        default=2.0)
+    depth = FloatProperty(name="Depth",
         description="Depth of Sqorus",
-        default=2.00, min=0.01, max=100.00)
+        min=0.01,
+        max=9999.0,
+        default=2.0)
 
     def execute(self, context):
+        props = self.properties
 
-        verts_loc, faces = add_sqorus(self.properties.sqorus_width,
-                                    self.properties.sqorus_height,
-                                    self.properties.sqorus_depth)
+        # Create mesh geometry
+        verts, faces = add_sqorus(
+            props.width,
+            props.height,
+            props.depth)
 
-        mesh = bpy.data.meshes.new("Sqorus")
+        # Create mesh object (and meshdata)
+        obj = create_mesh_object(context, verts, [], faces, "Sqorus",
+            props.edit)
 
-        mesh.add_geometry(int(len(verts_loc) / 3), 0, int(len(faces) / 4))
-        mesh.verts.foreach_set("co", verts_loc)
-        mesh.faces.foreach_set("verts_raw", faces)
-        mesh.faces.foreach_set("smooth", [False] * len(mesh.faces))
-
-        scene = context.scene
-
-        # ugh
-        for ob in scene.objects:
-            ob.selected = False
-
-        mesh.update()
-        ob_new = bpy.data.objects.new("Sqorus", mesh)
-        ob_new.data = mesh
-        scene.objects.link(ob_new)
-        scene.objects.active = ob_new
-        ob_new.selected = True
-
-        ob_new.location = tuple(context.scene.cursor_location)
+        # Store 'recall' properties in the object.
+        recall_args_list = {
+            "edit": True,
+            "width": props.width,
+            "height": props.height,
+            "depth": props.depth}
+        store_recall_properties(obj, self, recall_args_list)
 
         return {'FINISHED'}
 
 
 # Register the operator
-# Add to a menu, reuse an icon used elsewhere that happens to have fitting name
-# unfortunately, the icon shown is the one I expected from looking at the
-# blenderbuttons file from the release/datafiles directory
-
 menu_func = (lambda self, context: self.layout.operator(AddSqorus.bl_idname,
             text="Add Sqorus", icon='PLUGIN'))
 
 
 def register():
     bpy.types.register(AddSqorus)
+
+    # Add "Sqorus" menu to the "Add Mesh" menu.
     bpy.types.INFO_MT_mesh_add.append(menu_func)
 
 
 def unregister():
     bpy.types.unregister(AddSqorus)
-    bpy.types.INFO_MT_mesh_add.remove(menu_func)
 
-# Remove "Sqorus" menu from the "Add Mesh" menu.
-#space_info.INFO_MT_mesh_add.remove(menu_func)
+    # Remove "Sqorus" menu from the "Add Mesh" menu.
+    bpy.types.INFO_MT_mesh_add.remove(menu_func)
 
 if __name__ == "__main__":
     register()
