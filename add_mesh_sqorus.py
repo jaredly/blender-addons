@@ -23,7 +23,7 @@
 bl_addon_info = {
     'name': 'Add Mesh: Sqorus',
     'author': 'fourmadmen',
-    'version': '1.3',
+    'version': '1.3.1',
     'blender': (2, 5, 3),
     'location': 'View3D > Add > Mesh ',
     'description': 'Adds a mesh Squorus to the Add Mesh menu',
@@ -251,23 +251,23 @@ def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
     return faces
 
 
-# @todo Simplify the face creation code (i.e. remove all that hardcoded
-# stuff if possible)
-def add_sqorus(width, height, depth, subdivide):
+# @todo Make axis of the hole selectable?
+# @todo Different size of the hole?
+def add_sqorus(size_x, size_y, size_z, subdivide):
     verts = []
     faces = []
 
-    half_depth = depth / 2.0
+    half_size_z = size_z / 2.0
 
     if subdivide:
         for i in range(4):
-            y = float(i) / 3.0 * height - height / 2.0
+            y = float(i) / 3.0 * size_y - size_y / 2.0
 
             for j in range(4):
-                x = float(j) / 3.0 * width - width / 2.0
+                x = float(j) / 3.0 * size_x - size_x / 2.0
 
-                verts.append(Vector(x, y, half_depth))
-                verts.append(Vector(x, y, -half_depth))
+                verts.append(Vector(x, y, half_size_z))
+                verts.append(Vector(x, y, -half_size_z))
 
         # Top outer loop (vertex indices)
         vIdx_out_up = [0, 2, 4, 6, 14, 22, 30, 28, 26, 24, 16, 8]
@@ -326,10 +326,10 @@ def add_sqorus(width, height, depth, subdivide):
         vIdx_in_low = []
 
         for i in range(4):
-            y = float(i) / 3.0 * height - height / 2.0
+            y = float(i) / 3.0 * size_y - size_y / 2.0
 
             for j in range(4):
-                x = float(j) / 3.0 * width - width / 2.0
+                x = float(j) / 3.0 * size_x - size_x / 2.0
 
                 append = False
                 inner = False
@@ -344,9 +344,9 @@ def add_sqorus(width, height, depth, subdivide):
 
                 if append:
                     vert_up = len(verts)
-                    verts.append(Vector(x, y, half_depth))
+                    verts.append(Vector(x, y, half_size_z))
                     vert_low = len(verts)
-                    verts.append(Vector(x, y, -half_depth))
+                    verts.append(Vector(x, y, -half_size_z))
 
                     if inner:
                         vIdx_in_up.append(vert_up)
@@ -385,18 +385,18 @@ class AddSqorus(bpy.types.Operator):
         description="",
         default=False,
         options={'HIDDEN'})
-    width = FloatProperty(name="Width",
-        description="Width of Sqorus",
+    size_x = FloatProperty(name="Size X",
+        description="X size of the Sqorus",
         min=0.01,
         max=9999.0,
         default=2.0)
-    height = FloatProperty(name="Height",
-        description="Height of Sqorus",
+    size_y = FloatProperty(name="Size Y",
+        description="Y size of the Sqorus",
         min=0.01,
         max=9999.0,
         default=2.0)
-    depth = FloatProperty(name="Depth",
-        description="Depth of Sqorus",
+    size_z = FloatProperty(name="Size Z",
+        description="Z size of the Sqorus",
         min=0.01,
         max=9999.0,
         default=2.0)
@@ -410,9 +410,9 @@ class AddSqorus(bpy.types.Operator):
 
         # Create mesh geometry
         verts, faces = add_sqorus(
-            props.width,
-            props.height,
-            props.depth,
+            props.size_x,
+            props.size_y,
+            props.size_z,
             props.subdivide)
 
         # Create mesh object (and meshdata)
@@ -422,9 +422,9 @@ class AddSqorus(bpy.types.Operator):
         # Store 'recall' properties in the object.
         recall_args_list = {
             "edit": True,
-            "width": props.width,
-            "height": props.height,
-            "depth": props.depth,
+            "size_x": props.size_x,
+            "size_y": props.size_y,
+            "size_z": props.size_z,
             "subdivide": props.subdivide}
         store_recall_properties(obj, self, recall_args_list)
 
