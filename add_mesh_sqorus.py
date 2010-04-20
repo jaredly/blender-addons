@@ -23,7 +23,7 @@
 bl_addon_info = {
     'name': 'Add Mesh: Sqorus',
     'author': 'fourmadmen',
-    'version': '1.2',
+    'version': '1.3',
     'blender': (2, 5, 3),
     'location': 'View3D > Add > Mesh ',
     'description': 'Adds a mesh Squorus to the Add Mesh menu',
@@ -182,50 +182,194 @@ def create_mesh_object(context, verts, edges, faces, name, edit):
     return ob_new
 
 
+# A very simple "bridge" tool.
+# Connects two equally long vertex rows with faces.
+# Returns a list of the new faces (list of  lists)
+#
+# vertIdx1 ... First vertex list (list of vertex indices).
+# vertIdx2 ... Second vertex list (list of vertex indices).
+# closed ... Creates a loop (first & last are closed).
+# flipped ... Invert the normal of the face(s).
+#
+# Note: You can set vertIdx1 to a single vertex index to create
+#       a fan/star of faces.
+# Note: If both vertex idx list are the same length they have
+#       to have at least 2 vertices.
+def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
+    faces = []
+
+    if not vertIdx1 or not vertIdx2:
+        return None
+
+    if len(vertIdx1) < 2 and len(vertIdx2) < 2:
+        return None
+
+    fan = False
+    if (len(vertIdx1) != len(vertIdx2)):
+        if (len(vertIdx1) == 1 and len(vertIdx2) > 1):
+            fan = True
+        else:
+            return None
+
+    total = len(vertIdx2)
+
+    if closed:
+        # Bridge the start with the end.
+        if flipped:
+            face = [
+                vertIdx1[0],
+                vertIdx2[0],
+                vertIdx2[total - 1]]
+            if not fan:
+                face.append(vertIdx1[total - 1])
+            faces.append(face)
+
+        else:
+            face = [vertIdx2[0], vertIdx1[0]]
+            if not fan:
+                face.append(vertIdx1[total - 1])
+            face.append(vertIdx2[total - 1])
+            faces.append(face)
+
+    # Bridge the rest of the faces.
+    for num in range(total - 1):
+        if flipped:
+            if fan:
+                face = [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
+            else:
+                face = [vertIdx2[num], vertIdx1[num],
+                    vertIdx1[num + 1], vertIdx2[num + 1]]
+            faces.append(face)
+        else:
+            if fan:
+                face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
+            else:
+                face = [vertIdx1[num], vertIdx2[num],
+                    vertIdx2[num + 1], vertIdx1[num + 1]]
+            faces.append(face)
+
+    return faces
+
+
 # @todo Simplify the face creation code (i.e. remove all that hardcoded
 # stuff if possible)
-def add_sqorus(sqorus_width, sqorus_height, sqorus_depth):
+def add_sqorus(width, height, depth, subdivide):
     verts = []
     faces = []
 
-    half_depth = sqorus_depth / 2.0
+    half_depth = depth / 2.0
 
-    for i in range(4):
-        y = float(i) / 3.0 * sqorus_height
+    if subdivide:
+        for i in range(4):
+            y = float(i) / 3.0 * height - height / 2.0
 
-        for j in range(4):
-            x = float(j) / 3.0 * sqorus_width
+            for j in range(4):
+                x = float(j) / 3.0 * width - width / 2.0
 
-            verts.append(Vector(x, y, half_depth))
-            verts.append(Vector(x, y, -half_depth))
+                verts.append(Vector(x, y, half_depth))
+                verts.append(Vector(x, y, -half_depth))
 
-    for i in (0, 2, 4, 8, 12, 16, 18, 20):
-        faces.append([i, i + 2, i + 10, i + 8])
-        faces.append([i + 1, i + 9, i + 11, i + 3])
+        # Top outer loop (vertex indices)
+        vIdx_out_up = [0, 2, 4, 6, 14, 22, 30, 28, 26, 24, 16, 8]
+        # Lower outer loop (vertex indices)
+        vIdx_out_low = [i + 1 for i in vIdx_out_up]
 
-    for i in (0, 8, 16):
-        faces.append([i, i + 8, i + 9, i + 1])
+        faces_outside = createFaces(vIdx_out_up, vIdx_out_low, closed=True)
+        faces.extend(faces_outside)
 
-    for i in (6, 14, 22):
-        faces.append([i, i + 1, i + 9, i + 8])
+        # Top inner loop (vertex indices)
+        vIdx_inner_up = [10, 12, 20, 18]
 
-    for i in (0, 2, 4):
-        faces.append([i, i + 1, i + 3, i + 2])
+        # Lower inner loop (vertex indices)
+        vIdx_inner_low = [i + 1 for i in vIdx_inner_up]
 
-    for i in (24, 26, 28):
-        faces.append([i, i + 2, i + 3, i + 1])
+        faces_inside = createFaces(vIdx_inner_up, vIdx_inner_low,
+            closed=True, flipped=True)
+        faces.extend(faces_inside)
 
-    i = 10
-    faces.append([i, i + 1, i + 9, i + 8])
+        row1_top = [0, 8, 16, 24]
+        row2_top = [i + 2 for i in row1_top]
+        row3_top = [i + 2 for i in row2_top]
+        row4_top = [i + 2 for i in row3_top]
 
-    i = 12
-    faces.append([i, i + 8, i + 9, i + 1])
+        faces_top1 = createFaces(row1_top, row2_top)
+        faces.extend(faces_top1)
+        faces_top2_side1 = createFaces(row2_top[:2], row3_top[:2])
+        faces.extend(faces_top2_side1)
+        faces_top2_side2 = createFaces(row2_top[2:], row3_top[2:])
+        faces.extend(faces_top2_side2)
+        faces_top3 = createFaces(row3_top, row4_top)
+        faces.extend(faces_top3)
 
-    i = 18
-    faces.append([i, i + 1, i + 3, i + 2])
+        row1_bot = [1, 9, 17, 25]
+        row2_bot = [i + 2 for i in row1_bot]
+        row3_bot = [i + 2 for i in row2_bot]
+        row4_bot = [i + 2 for i in row3_bot]
 
-    i = 10
-    faces.append([i, i + 2, i + 3, i + 1])
+        faces_bot1 = createFaces(row1_bot, row2_bot, flipped=True)
+        faces.extend(faces_bot1)
+        faces_bot2_side1 = createFaces(row2_bot[:2], row3_bot[:2],
+            flipped=True)
+        faces.extend(faces_bot2_side1)
+        faces_bot2_side2 = createFaces(row2_bot[2:], row3_bot[2:],
+            flipped=True)
+        faces.extend(faces_bot2_side2)
+        faces_bot3 = createFaces(row3_bot, row4_bot, flipped=True)
+        faces.extend(faces_bot3)
+
+    else:
+        # Do not subdivde outer faces
+
+        vIdx_out_up = []
+        vIdx_out_low = []
+        vIdx_in_up = []
+        vIdx_in_low = []
+
+        for i in range(4):
+            y = float(i) / 3.0 * height - height / 2.0
+
+            for j in range(4):
+                x = float(j) / 3.0 * width - width / 2.0
+
+                append = False
+                inner = False
+                # Outer
+                if (i in [0, 3] and j in [0, 3]):
+                    append = True
+
+                # Inner
+                if (i in [1, 2] and j in [1, 2]):
+                    append = True
+                    inner = True
+
+                if append:
+                    vert_up = len(verts)
+                    verts.append(Vector(x, y, half_depth))
+                    vert_low = len(verts)
+                    verts.append(Vector(x, y, -half_depth))
+
+                    if inner:
+                        vIdx_in_up.append(vert_up)
+                        vIdx_in_low.append(vert_low)
+
+                    else:
+                        vIdx_out_up.append(vert_up)
+                        vIdx_out_low.append(vert_low)
+
+        # Flip last two vertices
+        vIdx_out_up = vIdx_out_up[:2] + list(reversed(vIdx_out_up[2:]))
+        vIdx_out_low = vIdx_out_low[:2] + list(reversed(vIdx_out_low[2:]))
+        vIdx_in_up = vIdx_in_up[:2] + list(reversed(vIdx_in_up[2:]))
+        vIdx_in_low = vIdx_in_low[:2] + list(reversed(vIdx_in_low[2:]))
+
+        faces_top = createFaces(vIdx_in_up, vIdx_out_up, closed=True)
+        faces.extend(faces_top)
+        faces_bottom = createFaces(vIdx_out_low, vIdx_in_low, closed=True)
+        faces.extend(faces_bottom)
+        faces_inside = createFaces(vIdx_in_low, vIdx_in_up, closed=True)
+        faces.extend(faces_inside)
+        faces_outside = createFaces(vIdx_out_up, vIdx_out_low, closed=True)
+        faces.extend(faces_outside)
 
     return verts, faces
 
@@ -256,6 +400,10 @@ class AddSqorus(bpy.types.Operator):
         min=0.01,
         max=9999.0,
         default=2.0)
+    subdivide = BoolProperty(name="Subdivide",
+        description="Enable to subdivide the outer faces." \
+            " This results in equally spaced vertices.",
+        default=True)
 
     def execute(self, context):
         props = self.properties
@@ -264,7 +412,8 @@ class AddSqorus(bpy.types.Operator):
         verts, faces = add_sqorus(
             props.width,
             props.height,
-            props.depth)
+            props.depth,
+            props.subdivide)
 
         # Create mesh object (and meshdata)
         obj = create_mesh_object(context, verts, [], faces, "Sqorus",
@@ -275,7 +424,8 @@ class AddSqorus(bpy.types.Operator):
             "edit": True,
             "width": props.width,
             "height": props.height,
-            "depth": props.depth}
+            "depth": props.depth,
+            "subdivide": props.subdivide}
         store_recall_properties(obj, self, recall_args_list)
 
         return {'FINISHED'}
