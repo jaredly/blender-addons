@@ -23,7 +23,7 @@
 bl_addon_info = {
     'name': 'Add Mesh: Sqorus',
     'author': 'fourmadmen',
-    'version': '1.3.1',
+    'version': '1.3.2',
     'blender': (2, 5, 3),
     'location': 'View3D > Add > Mesh ',
     'description': 'Adds a mesh Squorus to the Add Mesh menu',
@@ -31,27 +31,11 @@ bl_addon_info = {
         'Scripts/Add_Sqorus',
     'category': 'Add Mesh'}
 
-# blender Extensions menu registration (in user Prefs)
-"Add Sqorus (View3D > Add > Mesh > Sqorus)"
-
 """
-Name: 'Sqorus'
-Blender: 250
-Group: 'AddMesh'
 Tip: 'Add Sqorus Object...'
 __author__ = ["Four Mad Men", "FourMadMen.com"]
-__version__ = '1.0'
-__url__ = [""]
 email__=["bwiki {at} fourmadmen {dot} com"]
-
-Usage:
-
-* Launch from Add Mesh menu
-
-* Modify parameters as desired or keep defaults
-
 """
-
 
 import bpy
 from mathutils import *
@@ -251,23 +235,28 @@ def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
     return faces
 
 
-# @todo Make axis of the hole selectable?
-# @todo Different size of the hole?
-def add_sqorus(size_x, size_y, size_z, subdivide):
+def add_sqorus(hole_size, subdivide):
     verts = []
     faces = []
 
-    half_size_z = size_z / 2.0
+    size = 2.0
+
+    thickness = (size - hole_size) / 2.0
+    distances = [
+        -size / 2.0,
+        -size / 2.0 + thickness,
+        size / 2.0 - thickness,
+        size / 2.0]
 
     if subdivide:
         for i in range(4):
-            y = float(i) / 3.0 * size_y - size_y / 2.0
+            y = distances[i]
 
             for j in range(4):
-                x = float(j) / 3.0 * size_x - size_x / 2.0
+                x = distances[j]
 
-                verts.append(Vector(x, y, half_size_z))
-                verts.append(Vector(x, y, -half_size_z))
+                verts.append(Vector(x, y, size / 2.0))
+                verts.append(Vector(x, y, -size / 2.0))
 
         # Top outer loop (vertex indices)
         vIdx_out_up = [0, 2, 4, 6, 14, 22, 30, 28, 26, 24, 16, 8]
@@ -326,10 +315,10 @@ def add_sqorus(size_x, size_y, size_z, subdivide):
         vIdx_in_low = []
 
         for i in range(4):
-            y = float(i) / 3.0 * size_y - size_y / 2.0
+            y = distances[i]
 
             for j in range(4):
-                x = float(j) / 3.0 * size_x - size_x / 2.0
+                x = distances[j]
 
                 append = False
                 inner = False
@@ -344,9 +333,9 @@ def add_sqorus(size_x, size_y, size_z, subdivide):
 
                 if append:
                     vert_up = len(verts)
-                    verts.append(Vector(x, y, half_size_z))
+                    verts.append(Vector(x, y, size / 2.0))
                     vert_low = len(verts)
-                    verts.append(Vector(x, y, -half_size_z))
+                    verts.append(Vector(x, y, -size / 2.0))
 
                     if inner:
                         vIdx_in_up.append(vert_up)
@@ -362,6 +351,7 @@ def add_sqorus(size_x, size_y, size_z, subdivide):
         vIdx_in_up = vIdx_in_up[:2] + list(reversed(vIdx_in_up[2:]))
         vIdx_in_low = vIdx_in_low[:2] + list(reversed(vIdx_in_low[2:]))
 
+        # Create faces
         faces_top = createFaces(vIdx_in_up, vIdx_out_up, closed=True)
         faces.extend(faces_top)
         faces_bottom = createFaces(vIdx_out_low, vIdx_in_low, closed=True)
@@ -385,23 +375,13 @@ class AddSqorus(bpy.types.Operator):
         description="",
         default=False,
         options={'HIDDEN'})
-    size_x = FloatProperty(name="Size X",
-        description="X size of the Sqorus",
+    hole_size = FloatProperty(name="Hole Size",
+        description="Size of the Hole",
         min=0.01,
-        max=9999.0,
-        default=2.0)
-    size_y = FloatProperty(name="Size Y",
-        description="Y size of the Sqorus",
-        min=0.01,
-        max=9999.0,
-        default=2.0)
-    size_z = FloatProperty(name="Size Z",
-        description="Z size of the Sqorus",
-        min=0.01,
-        max=9999.0,
-        default=2.0)
-    subdivide = BoolProperty(name="Subdivide",
-        description="Enable to subdivide the outer faces." \
+        max=1.99,
+        default=2.0 / 3.0)
+    subdivide = BoolProperty(name="Subdivide Outside",
+        description="Enable to subdivide the faces on the outside." \
             " This results in equally spaced vertices.",
         default=True)
 
@@ -410,9 +390,7 @@ class AddSqorus(bpy.types.Operator):
 
         # Create mesh geometry
         verts, faces = add_sqorus(
-            props.size_x,
-            props.size_y,
-            props.size_z,
+            props.hole_size,
             props.subdivide)
 
         # Create mesh object (and meshdata)
@@ -422,9 +400,7 @@ class AddSqorus(bpy.types.Operator):
         # Store 'recall' properties in the object.
         recall_args_list = {
             "edit": True,
-            "size_x": props.size_x,
-            "size_y": props.size_y,
-            "size_z": props.size_z,
+            "hole_size": props.hole_size,
             "subdivide": props.subdivide}
         store_recall_properties(obj, self, recall_args_list)
 
