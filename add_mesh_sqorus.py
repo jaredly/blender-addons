@@ -409,7 +409,7 @@ class AddSqorus(bpy.types.Operator):
 
 # Register the operator
 menu_func = (lambda self, context: self.layout.operator(AddSqorus.bl_idname,
-            text="Add Sqorus", icon='PLUGIN'))
+            text="Sqorus", icon='PLUGIN'))
 
 
 def register():
