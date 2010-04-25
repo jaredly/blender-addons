@@ -255,8 +255,8 @@ def add_sqorus(hole_size, subdivide):
             for j in range(4):
                 x = distances[j]
 
-                verts.append(Vector(x, y, size / 2.0))
-                verts.append(Vector(x, y, -size / 2.0))
+                verts.append(Vector((x, y, size / 2.0)))
+                verts.append(Vector((x, y, -size / 2.0)))
 
         # Top outer loop (vertex indices)
         vIdx_out_up = [0, 2, 4, 6, 14, 22, 30, 28, 26, 24, 16, 8]
@@ -333,9 +333,9 @@ def add_sqorus(hole_size, subdivide):
 
                 if append:
                     vert_up = len(verts)
-                    verts.append(Vector(x, y, size / 2.0))
+                    verts.append(Vector((x, y, size / 2.0)))
                     vert_low = len(verts)
-                    verts.append(Vector(x, y, -size / 2.0))
+                    verts.append(Vector((x, y, -size / 2.0)))
 
                     if inner:
                         vIdx_in_up.append(vert_up)
