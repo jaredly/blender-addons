@@ -145,17 +145,7 @@ def store_recall_properties(ob, op, op_args):
 
 # Apply view rotation to objects if "Align To" for
 # new objects was set to "VIEW" in the User Preference.
-def apply_object_align(context, ob):
-    obj_align = bpy.context.user_preferences.edit.object_align
-
-    if (context.space_data.type == 'VIEW_3D'
-        and obj_align == 'VIEW'):
-            view3d = context.space_data
-            region = view3d.region_3d
-            viewMatrix = region.view_matrix
-            rot = viewMatrix.rotation_part()
-            ob.rotation_euler = rot.invert().to_euler()
-
+# Is now handled in the invoke functions
 
 # Create a new mesh (object) from verts/edges/faces.
 # verts/edges/faces ... List of vertices/edges/faces for the
@@ -163,7 +153,7 @@ def apply_object_align(context, ob):
 # name ... Name of the new mesh (& object).
 # edit ... Replace existing mesh data.
 # Note: Using "edit" will destroy/delete existing mesh data.
-def create_mesh_object(context, verts, edges, faces, name, edit):
+def create_mesh_object(context, verts, edges, faces, name, edit, newMatrix):
     scene = context.scene
     obj_act = scene.objects.active
 
@@ -216,9 +206,7 @@ def create_mesh_object(context, verts, edges, faces, name, edit):
         ob_new.selected = True
 
         # Place the object at the 3D cursor location.
-        ob_new.location = scene.cursor_location
-
-        apply_object_align(context, ob_new)
+        ob_new.matrix = newMatrix
 
     if obj_act and obj_act.mode == 'EDIT':
         if not edit:
@@ -359,6 +347,7 @@ class AddElbowJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
+    newMatrix = 'fromInvoke'
 
     def execute(self, context):
         edit = self.properties.edit
@@ -419,7 +408,7 @@ class AddElbowJoint(bpy.types.Operator):
         faces.extend(createFaces(loop2, loop3, closed=True))
 
         obj = create_mesh_object(context, verts, [], faces,
-            "Elbow Joint", edit)
+            "Elbow Joint", edit, self.newMatrix)
 
         # Store 'recall' properties in the object.
         recall_args_list = {
@@ -433,6 +422,17 @@ class AddElbowJoint(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+        obj_align = context.user_preferences.edit.object_align
+        if (context.space_data.type == 'VIEW_3D'
+            and obj_align == 'VIEW'):
+            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+        else:
+            rot = mathutils.RotationMatrix()
+        self.newMatrix = loc * rot
+        self.execute(context)
+        return {'FINISHED'}
 
 class AddTeeJoint(bpy.types.Operator):
     # Create the vertices and polygons for a simple tee (T) joint.
@@ -488,6 +488,7 @@ class AddTeeJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
+    newMatrix = 'fromInvoke'
 
     def execute(self, context):
         edit = self.properties.edit
@@ -615,7 +616,7 @@ class AddTeeJoint(bpy.types.Operator):
         faces.extend(createFaces(loopJoint2, loopArm, closed=True))
         faces.extend(createFaces(loopJoint3, loopMainEnd, closed=True))
 
-        obj = create_mesh_object(context, verts, [], faces, "Tee Joint", edit)
+        obj = create_mesh_object(context, verts, [], faces, "Tee Joint", edit, self.newMatrix)
 
         # Store 'recall' properties in the object.
         recall_args_list = {
@@ -630,6 +631,17 @@ class AddTeeJoint(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+        obj_align = context.user_preferences.edit.object_align
+        if (context.space_data.type == 'VIEW_3D'
+            and obj_align == 'VIEW'):
+            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+        else:
+            rot = mathutils.RotationMatrix()
+        self.newMatrix = loc * rot
+        self.execute(context)
+        return {'FINISHED'}
 
 class AddWyeJoint(bpy.types.Operator):
     '''Add a Wye-Joint mesh'''
@@ -689,6 +701,7 @@ class AddWyeJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
+    newMatrix = 'fromInvoke'
 
     def execute(self, context):
         edit = self.properties.edit
@@ -827,7 +840,7 @@ class AddWyeJoint(bpy.types.Operator):
         faces.extend(createFaces(loopJoint2, loopArm1, closed=True))
         faces.extend(createFaces(loopJoint3, loopArm2, closed=True))
 
-        obj = create_mesh_object(context, verts, [], faces, "Wye Joint", edit)
+        obj = create_mesh_object(context, verts, [], faces, "Wye Joint", edit, self.newMatrix)
 
         # Store 'recall' properties in the object.
         recall_args_list = {
@@ -843,6 +856,17 @@ class AddWyeJoint(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+        obj_align = context.user_preferences.edit.object_align
+        if (context.space_data.type == 'VIEW_3D'
+            and obj_align == 'VIEW'):
+            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+        else:
+            rot = mathutils.RotationMatrix()
+        self.newMatrix = loc * rot
+        self.execute(context)
+        return {'FINISHED'}
 
 class AddCrossJoint(bpy.types.Operator):
     '''Add a Cross-Joint mesh'''
@@ -913,6 +937,7 @@ class AddCrossJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
+    newMatrix = 'fromInvoke'
 
     def execute(self, context):
         edit = self.properties.edit
@@ -1102,7 +1127,7 @@ class AddCrossJoint(bpy.types.Operator):
         faces.extend(createFaces(loopJoint4, loopArm3, closed=True))
 
         obj = create_mesh_object(context, verts, [], faces,
-            "Cross Joint", edit)
+            "Cross Joint", edit, self.newMatrix)
 
         # Store 'recall' properties in the object.
         recall_args_list = {
@@ -1120,6 +1145,17 @@ class AddCrossJoint(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+        obj_align = context.user_preferences.edit.object_align
+        if (context.space_data.type == 'VIEW_3D'
+            and obj_align == 'VIEW'):
+            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+        else:
+            rot = mathutils.RotationMatrix()
+        self.newMatrix = loc * rot
+        self.execute(context)
+        return {'FINISHED'}
 
 class AddNJoint(bpy.types.Operator):
     '''Add a N-Joint mesh'''
@@ -1156,6 +1192,7 @@ class AddNJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
+    newMatrix = 'fromInvoke'
 
     def execute(self, context):
         edit = self.properties.edit
@@ -1280,7 +1317,7 @@ class AddNJoint(bpy.types.Operator):
                 createFaces(loopsJoints[loopIdx],
                 loopsEndCircles[loopIdx], closed=True))
 
-        obj = create_mesh_object(context, verts, [], faces, "N Joint", edit)
+        obj = create_mesh_object(context, verts, [], faces, "N Joint", edit, self.newMatrix)
 
         # Store 'recall' properties in the object.
         recall_args_list = {
@@ -1293,6 +1330,17 @@ class AddNJoint(bpy.types.Operator):
 
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+        obj_align = context.user_preferences.edit.object_align
+        if (context.space_data.type == 'VIEW_3D'
+            and obj_align == 'VIEW'):
+            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+        else:
+            rot = mathutils.RotationMatrix()
+        self.newMatrix = loc * rot
+        self.execute(context)
+        return {'FINISHED'}
 
 class INFO_MT_mesh_pipe_joints_add(bpy.types.Menu):
     # Define the "Pipe Joints" menu
