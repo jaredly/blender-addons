@@ -752,7 +752,7 @@ class AddGear(bpy.types.Operator):
         min=0.0,
         max=100.0,
         default=0.0)
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def draw(self, context):
         props = self.properties
@@ -885,7 +885,7 @@ class AddWormGear(bpy.types.Operator):
         min=0.0,
         max=100.0,
         default=0.0)
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def draw(self, context):
         props = self.properties

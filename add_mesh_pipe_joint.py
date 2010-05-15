@@ -347,7 +347,7 @@ class AddElbowJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def execute(self, context):
         edit = self.properties.edit
@@ -488,7 +488,7 @@ class AddTeeJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def execute(self, context):
         edit = self.properties.edit
@@ -701,7 +701,7 @@ class AddWyeJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def execute(self, context):
         edit = self.properties.edit
@@ -937,7 +937,7 @@ class AddCrossJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def execute(self, context):
         edit = self.properties.edit
@@ -1192,7 +1192,7 @@ class AddNJoint(bpy.types.Operator):
         min=0.01,
         max=100.0,
         unit="LENGTH")
-    newMatrix = 'fromInvoke'
+    newMatrix = mathutils.Matrix()
 
     def execute(self, context):
         edit = self.properties.edit
