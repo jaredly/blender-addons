@@ -429,7 +429,7 @@ class AddElbowJoint(bpy.types.Operator):
             and obj_align == 'VIEW'):
             rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
         else:
-            rot = mathutils.RotationMatrix()
+            rot = mathutils.Matrix()
         self.newMatrix = loc * rot
         self.execute(context)
         return {'FINISHED'}
@@ -638,7 +638,7 @@ class AddTeeJoint(bpy.types.Operator):
             and obj_align == 'VIEW'):
             rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
         else:
-            rot = mathutils.RotationMatrix()
+            rot = mathutils.Matrix()
         self.newMatrix = loc * rot
         self.execute(context)
         return {'FINISHED'}
@@ -863,7 +863,7 @@ class AddWyeJoint(bpy.types.Operator):
             and obj_align == 'VIEW'):
             rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
         else:
-            rot = mathutils.RotationMatrix()
+            rot = mathutils.Matrix()
         self.newMatrix = loc * rot
         self.execute(context)
         return {'FINISHED'}
@@ -1152,7 +1152,7 @@ class AddCrossJoint(bpy.types.Operator):
             and obj_align == 'VIEW'):
             rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
         else:
-            rot = mathutils.RotationMatrix()
+            rot = mathutils.Matrix()
         self.newMatrix = loc * rot
         self.execute(context)
         return {'FINISHED'}
@@ -1337,7 +1337,7 @@ class AddNJoint(bpy.types.Operator):
             and obj_align == 'VIEW'):
             rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
         else:
-            rot = mathutils.RotationMatrix()
+            rot = mathutils.Matrix()
         self.newMatrix = loc * rot
         self.execute(context)
         return {'FINISHED'}
