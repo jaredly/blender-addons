@@ -67,6 +67,18 @@ import mathutils
 from math import *
 from bpy.props import *
 
+# calculates the matrix for the new object
+# depending on user pref
+def align_matrix(context):
+    loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+    obj_align = context.user_preferences.edit.object_align
+    if (context.space_data.type == 'VIEW_3D'
+        and obj_align == 'VIEW'):
+        rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+    else:
+        rot = mathutils.Matrix()
+    newMatrix = loc * rot
+    return newMatrix
 
 # Stores the values of a list of properties and the
 # operator id in a property group ('recall_op') inside the object.
@@ -818,14 +830,7 @@ class AddGear(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 
@@ -947,14 +952,7 @@ class AddWormGear(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 

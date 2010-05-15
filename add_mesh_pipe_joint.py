@@ -146,7 +146,18 @@ def store_recall_properties(ob, op, op_args):
 # Apply view rotation to objects if "Align To" for
 # new objects was set to "VIEW" in the User Preference.
 # Is now handled in the invoke functions
-
+# calculates the matrix for the new object
+# depending on user pref
+def align_matrix(context):
+    loc = mathutils.TranslationMatrix(context.scene.cursor_location)
+    obj_align = context.user_preferences.edit.object_align
+    if (context.space_data.type == 'VIEW_3D'
+        and obj_align == 'VIEW'):
+        rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
+    else:
+        rot = mathutils.Matrix()
+    newMatrix = loc * rot
+    return newMatrix
 # Create a new mesh (object) from verts/edges/faces.
 # verts/edges/faces ... List of vertices/edges/faces for the
 #                       new mesh (as used in from_pydata).
@@ -423,14 +434,7 @@ class AddElbowJoint(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 
@@ -632,14 +636,7 @@ class AddTeeJoint(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 
@@ -857,14 +854,7 @@ class AddWyeJoint(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 
@@ -1146,14 +1136,7 @@ class AddCrossJoint(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 
@@ -1331,14 +1314,7 @@ class AddNJoint(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        loc = mathutils.TranslationMatrix(context.scene.cursor_location)
-        obj_align = context.user_preferences.edit.object_align
-        if (context.space_data.type == 'VIEW_3D'
-            and obj_align == 'VIEW'):
-            rot = context.space_data.region_3d.view_matrix.rotation_part().invert().resize4x4()
-        else:
-            rot = mathutils.Matrix()
-        self.newMatrix = loc * rot
+        self.newMatrix = align_matrix(context)
         self.execute(context)
         return {'FINISHED'}
 
