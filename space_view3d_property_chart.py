@@ -49,7 +49,7 @@ class View3DEditProps(bpy.types.Panel):
 
         selected_objects = context.selected_objects
 
-        if not obj_type_sel:
+        if not selected_objects:
             return
 
         # box = layout.separator()
