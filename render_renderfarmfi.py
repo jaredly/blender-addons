@@ -19,6 +19,20 @@
 # Copyright 2009-2010 Laurea University of Applied Sciences
 # Authors: Nathan Letwory, Jesse Kaukonen
 
+bl_addon_info = {
+    'name': 'Render: Renderfarm.fi',
+    'author': 'Nathan Letwory <nathan@letworyinteractive.com>, Jesse Kaukonen <jesse.kaukonen@gmail.com>',
+    'version': str(bpy.CURRENT_VERSION),
+    'blender': (2, 5, 3),
+    'location': 'Render > Engine > Renderfarm.fi',
+    'description': 'Send .blend as session to http://www.renderfarm.fi to render',
+    'warning': '', # used for warning icon and text in addons panel
+    'wiki_url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/' \
+        'Scripts/Render/Renderfarm.fi',
+    'tracker_url': 'https://projects.blender.org/tracker/index.php?'\
+        'func=detail&aid=22927&group_id=153&atid=469',
+    'category': 'Render'}
+
 import bpy
 import hashlib
 import http.client
@@ -30,18 +44,6 @@ bpy.CURRENT_VERSION = 2
 bpy.found_newer_version = False
 bpy.up_to_date = False
 bpy.download_location = 'http://www.renderfarm.fi/blender'
-
-bl_addon_info = {
-    'name': 'Render: Renderfarm.fi',
-    'author': 'Nathan Letwory <nathan@letworyinteractive.com>, Jesse Kaukonen <jesse.kaukonen@gmail.com>',
-    'version': str(bpy.CURRENT_VERSION),
-    'blender': (2, 5, 3),
-    'location': 'Render > Engine > Renderfarm.fi',
-    'description': 'Send .blend as session to http://www.renderfarm.fi to render',
-    'warning': '', # used for warning icon and text in addons panel
-    'wiki_url': 'http://www.renderfarm.fi',
-    'tracker_url': 'http://www.renderfarm.fi',
-    'category': 'Render Engine'}
 
 bpy.errorMessages = {
     'missing_desc': 'You need to enter a title, short and long description',
