@@ -19,6 +19,18 @@
 # Copyright 2009-2010 Laurea University of Applied Sciences
 # Authors: Nathan Letwory, Jesse Kaukonen
 
+import bpy
+import hashlib
+import http.client
+import xmlrpc.client
+import math
+from os.path import abspath, isabs, join, isfile
+
+bpy.CURRENT_VERSION = 2
+bpy.found_newer_version = False
+bpy.up_to_date = False
+bpy.download_location = 'http://www.renderfarm.fi/blender'
+
 bl_addon_info = {
     'name': 'Render: Renderfarm.fi',
     'author': 'Nathan Letwory <nathan@letworyinteractive.com>, Jesse Kaukonen <jesse.kaukonen@gmail.com>',
@@ -32,18 +44,6 @@ bl_addon_info = {
     'tracker_url': 'https://projects.blender.org/tracker/index.php?'\
         'func=detail&aid=22927&group_id=153&atid=469',
     'category': 'Render'}
-
-import bpy
-import hashlib
-import http.client
-import xmlrpc.client
-import math
-from os.path import abspath, isabs, join, isfile
-
-bpy.CURRENT_VERSION = 2
-bpy.found_newer_version = False
-bpy.up_to_date = False
-bpy.download_location = 'http://www.renderfarm.fi/blender'
 
 bpy.errorMessages = {
     'missing_desc': 'You need to enter a title, short and long description',
