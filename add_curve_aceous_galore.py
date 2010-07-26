@@ -20,7 +20,7 @@
 bl_addon_info = {
     'name': 'Add Curve: Curveaceous Galore!',
     'author': 'Jimmy Hazevoet, testscreenings',
-    'version': '0.1',
+    'version': '0.1.1',
     'blender': (2, 5, 3),
     'location': 'View3D > Add > Curve',
     'description': 'Adds many types of curves',
@@ -38,10 +38,12 @@ import bpy
 from bpy.props import *
 from mathutils import *
 from math import *
+from noise import *
+
 ###------------------------------------------------------------
 #### Some functions to use with others:
 ###------------------------------------------------------------
-'''
+
 #------------------------------------------------------------
 # Generate random number:
 def randnum( low=0.0, high=1.0, seed=0 ):
@@ -62,8 +64,8 @@ def randnum( low=0.0, high=1.0, seed=0 ):
                 (type=float)
     """
 
-    s = Noise.setRandomSeed( seed )
-    rnum = Noise.random()
+    seed_set( seed )
+    rnum = random_unit_vector()[0]
     rnum = rnum*(high-low)
     rnum = rnum+low
     return rnum
@@ -72,7 +74,7 @@ def randnum( low=0.0, high=1.0, seed=0 ):
 
 #------------------------------------------------------------
 # Make some noise:
-def vTurbNoise((x,y,z), iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 ):
+def vTurbNoise(x,y,z, iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 ):
     """
     vTurbNoise((x,y,z), iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 )
     
@@ -100,7 +102,7 @@ def vTurbNoise((x,y,z), iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 
 
     rand = randnum(-100,100,Seed)
     if Basis ==9: Basis = 14
-    vTurb = Noise.vTurbulence(( x/Size+rand, y/Size+rand, z/Size+rand ), Depth, Hard, Basis )
+    vTurb = turbulence_vector(( x/Size+rand, y/Size+rand, z/Size+rand ), Depth, Hard, Basis )
     tx = vTurb[0]*iScale
     ty = vTurb[1]*iScale
     tz = vTurb[2]*iScale
@@ -110,7 +112,7 @@ def vTurbNoise((x,y,z), iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 
 
 #------------------------------------------------------------
 # Axis: ( used in 3DCurve Turbulence )
-def AxisFlip((x,y,z), x_axis=1, y_axis=1, z_axis=1, flip=0 ):
+def AxisFlip(x,y,z, x_axis=1, y_axis=0, z_axis=0, flip=0 ):
     if flip != 0:
         flip *= -1
     else: flip = 1
@@ -118,7 +120,7 @@ def AxisFlip((x,y,z), x_axis=1, y_axis=1, z_axis=1, flip=0 ):
     y *= y_axis*flip
     z *= z_axis*flip
     return x,y,z
-'''
+
 
 ###-------------------------------------------------------------------
 #### 2D Curve shape functions:
@@ -446,7 +448,7 @@ def nSideCurve(sides=6, radius=1.0):
         i+=1
     return newpoints
 
-'''
+
 ##------------------------------------------------------------
 # 2DCurve: Splat:
 def SplatCurve(sides=24, scale=1.0, seed=0, basis=0, radius=1.0):
@@ -476,14 +478,14 @@ def SplatCurve(sides=24, scale=1.0, seed=0, basis=0, radius=1.0):
     i = 0
     while i < sides:
         t = (i*step)
-        turb = vTurbNoise(t, 1.0, scale, 6, 0, basis, seed )
-        turb = turb[2] * 0.5 + 0.5
+        turb = vTurbNoise(t,t,t, 1.0, scale, 6, 0, basis, seed )
+        turb = turb[0] * 0.5 + 0.5
         x = sin(t*pi)*radius * turb
         y = cos(t*pi)*radius * turb
         newpoints.append([x,y,0])
         i+=1
     return newpoints
-'''
+
 ###-----------------------------------------------------------
 #### 3D curve shape functions:
 ###-----------------------------------------------------------
@@ -572,6 +574,46 @@ def CycloidCurve( number=24, length=2.0, type=0, a=1.0, b=1.0, startangle=0.0, e
     else:
         newpoints = [[-1,-1,0], [-1,1,0], [1,1,0], [1,-1,0]]
     return newpoints
+
+
+###------------------------------------------------------------
+# 3DCurve: Turbulence: tnoise=[ iScale, Size, Depth, Hard, Basis, Seed ], axis=[x,y,z]
+def TurbulenceCurve( number=24, length=2.0, iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 ):
+    """
+    TurbulenceCurve( number=24, length=2.0, iScale=0.25, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 )
+
+    Create turbulence curve
+    
+        Parameters:
+            number - the number of points
+                (type=int)
+            length - length of curve
+                (type=float)
+            Size - Noise size - float 0.0,inf
+            Depth - Noise depth - int 0,8
+            Hard - Noise hard - int 0,1
+            Basis - Noise basis - int 0,9
+            Seed
+        Returns:
+            a list with lists of x,y,z coordinates for curve points, [[x,y,z],[x,y,z],...n]
+            (type=list)
+    """
+ 
+    newpoints = []
+    step = (length/(number-1))
+    i = 0
+    while i < number:
+        t = (i*step)
+        x,y,z = AxisFlip(t,t,t, 0, 0, 1, 0 )
+        turb = vTurbNoise(x,y,z, iScale, Size=1.0, Depth=6, Hard=0, Basis=0, Seed=0 )
+        if i==0:
+            newpoints.append([x,y,z])
+        else:
+            newpoints.append([x+turb[0], y+turb[1], z+turb[2] ])            
+        i+=1
+    return newpoints
+
+
 
 ##------------------------------------------------------------
 # calculates the matrix for the new object
@@ -693,13 +735,15 @@ def main(context, options, curveOptions, align_matrix):
         verts = CogCurve(options[20], innerRadius, middleRadius, outerRadius, options[21])
     if galType == 'Nsided':
         verts = nSideCurve(options[22], outerRadius)
-#    if galType == 'Splat':
-#        verts = SplatCurve(options[23], options[24], options[25], options[26], outerRadius)
+    if galType == 'Splat':
+        verts = SplatCurve(options[23], options[24], options[25], options[26], outerRadius)
     if galType == 'Helix':
         verts = HelixCurve(options[27], options[28], options[29], options[30], options[31], options[32], options[33])
     if galType == 'Cycloid':
         verts = CycloidCurve(options[34], options[35], options[36], options[37], options[38], options[39], options[40])
-        
+    if galType == 'Turbulence':
+        verts = TurbulenceCurve(options[41], options[42], options[43], options[44], options[45], options[46], options[47], options[48])
+
     # turn verts into array
     vertArray = vertsToPoints(verts, splineType)
 
@@ -727,9 +771,10 @@ class Curveaceous_galore(bpy.types.Operator):
                 ('Arc', 'Arc', 'Arc'),
                 ('Cogwheel', 'Cogwheel', 'Cogwheel'),
                 ('Nsided', 'Nsided', 'Nsided'),
-#                ('Splat', 'Splat', 'Splat'),
+                ('Splat', 'Splat', 'Splat'),
                 ('Cycloid', 'Cycloid', 'Cycloid'),
-                ('Helix', 'Helix (3D)', 'Helix')]
+                ('Helix', 'Helix (3D)', 'Helix'),
+                ('Turbulence', 'Turbulence (3D)', 'Turbulence')]
     GalloreType = EnumProperty(name="Type",
                 description="Form of Curve to create",
                 items=GalloreTypes)
@@ -871,6 +916,8 @@ class Curveaceous_galore(bpy.types.Operator):
                     default=1.0,
                     min=0, soft_min=0,
                     description="Splat scale")
+
+    ###### Splat + Turbulence props
     seed = IntProperty(name="Seed",
                     default=0,
                     min=0, soft_min=0,
@@ -933,6 +980,32 @@ class Curveaceous_galore(bpy.types.Operator):
                             default=360.0,
                             description="Cycloid end angle")
 
+    #### Turbulence properties
+    turb_points = IntProperty(name="Resolution",
+                            default=100,
+                            min=3, soft_min=3,
+                            description="Resolution")
+    turb_length = FloatProperty(name="Length",
+                            default=2.0,
+                            description="Length")
+    turb_iscale = FloatProperty(name="Intensity scale",
+                            default=0.25,
+                            min=0.01, soft_min=0.01,
+                            description="Intensity scale")
+    turb_size = FloatProperty(name="Noise size",
+                            default=0.25,
+                            min=0.01, soft_min=0.01,
+                            description="Noise size")
+    turb_depth = IntProperty(name="Depth",
+                            default=6,
+                            min=1, max=8,
+                            description="Noise depth")
+    turb_hard = BoolProperty(name="Hard",
+                            default=0,
+                            description="Hard noise")
+
+
+
     ##### DRAW #####
     def draw(self, context):
         props = self.properties
@@ -980,14 +1053,14 @@ class Curveaceous_galore(bpy.types.Operator):
         if props.GalloreType == 'Nsided':
             box.prop(props, 'Nsides')
             box.prop(props, 'outerRadius', text='Radius')
-        '''
+
         if props.GalloreType == 'Splat':
             box.prop(props, 'splatSides')
             box.prop(props, 'outerRadius')
             box.prop(props, 'splatScale')
             box.prop(props, 'seed')
             box.prop(props, 'basis')
-        '''
+
         if props.GalloreType == 'Helix':
             box.prop(props, 'helixPoints')
             box.prop(props, 'helixHeight')
@@ -1004,6 +1077,16 @@ class Curveaceous_galore(bpy.types.Operator):
             box.prop(props, 'cyclo_a')
             box.prop(props, 'cyclo_b')
             box.prop(props, 'cyclo_d')
+
+        if props.GalloreType == 'Turbulence':
+            box.prop(props, 'turb_points')
+            box.prop(props, 'turb_length')
+            box.prop(props, 'turb_size')
+            box.prop(props, 'turb_iscale')
+            box.prop(props, 'turb_depth')
+            box.prop(props, 'seed')
+            box.prop(props, 'basis')
+            #box.prop(props, 'turb_hard')
 
         col = layout.column()
         col.label(text="Output Curve Type")
@@ -1041,9 +1124,9 @@ class Curveaceous_galore(bpy.types.Operator):
         bpy.context.user_preferences.edit.global_undo = False
 
         props = self.properties
-        if props.GalloreType in ['Helix', 'Cycloid']:
+        if props.GalloreType in ['Helix', 'Cycloid', 'Turbulence']:
             props.shape = '3D'
-        if props.GalloreType in ['Helix']:
+        if props.GalloreType in ['Helix', 'Turbulence']:
             props.cyclic_u = False
 
         # Options
@@ -1095,12 +1178,21 @@ class Curveaceous_galore(bpy.types.Operator):
             props.helix_b,              #33
             # Cycloid properties
             props.cycloPoints,          #34
-            props.cyclo_d,          #35
+            props.cyclo_d,              #35
             props.cycloType,            #36
             props.cyclo_a,              #37
             props.cyclo_b,              #38
             props.cycloStart,           #39
-            props.cycloEnd              #40
+            props.cycloEnd,             #40
+            # Turbulence properties
+            props.turb_points,          #41
+            props.turb_length,          #42
+            props.turb_iscale,          #43
+            props.turb_size,            #44
+            props.turb_depth,           #45
+            props.turb_hard,            #46
+            props.basis,                #47
+            props.seed                  #48
             ]
 
         # Curve options
@@ -1132,7 +1224,7 @@ class Curveaceous_galore(bpy.types.Operator):
 ##### REGISTER #####
 
 Curveaceous_galore_button = (lambda self, context: self.layout.operator
-            (Curveaceous_galore.bl_idname, text="curvatures gallore", icon="PLUGIN"))
+            (Curveaceous_galore.bl_idname, text="curveaceous gallore", icon="PLUGIN"))
 
 classes = [
 Curveaceous_galore
