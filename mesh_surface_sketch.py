@@ -35,7 +35,7 @@ import math
 from math import *
    
 
-class VIEW3D_PT_tools_SURF_SKETCH(View3DPanel):
+class VIEW3D_PT_tools_SURF_SKETCH(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
 
